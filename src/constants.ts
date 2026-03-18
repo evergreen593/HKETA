@@ -1,0 +1,83 @@
+import { LrtStation } from './types';
+
+export const LRT_STATIONS: LrtStation[] = [
+  // Zone 1
+  { id: 1, name_en: "Tuen Mun Ferry Pier", name_ch: "屯門碼頭", lat: 22.372481, lng: 113.966412 },
+  { id: 10, name_en: "Melody Garden", name_ch: "美樂", lat: 22.374021, lng: 113.964015 },
+  { id: 15, name_en: "Butterfly", name_ch: "蝴蝶", lat: 22.376982, lng: 113.963012 },
+  { id: 20, name_en: "Light Rail Depot", name_ch: "輕鐵車廠", lat: 22.381021, lng: 113.964015 },
+  { id: 30, name_en: "Lung Mun", name_ch: "龍門", lat: 22.384021, lng: 113.964015 },
+  { id: 240, name_en: "Siu Hei", name_ch: "兆禧", lat: 22.373481, lng: 113.968512 },
+  { id: 250, name_en: "Tuen Mun Swimming Pool", name_ch: "屯門泳池", lat: 22.378781, lng: 113.969512 },
+  { id: 260, name_en: "Goodview Garden", name_ch: "豐景園", lat: 22.381481, lng: 113.971512 },
+  { id: 265, name_en: "Siu Lun", name_ch: "兆麟", lat: 22.384481, lng: 113.974512 },
+  { id: 920, name_en: "Sam Shing", name_ch: "三聖", lat: 22.381021, lng: 113.980015 },
+
+  // Zone 2
+  { id: 40, name_en: "Tsing Shan Tsuen", name_ch: "青山村", lat: 22.392021, lng: 113.966015 },
+  { id: 50, name_en: "Tsing Wun", name_ch: "青雲", lat: 22.394021, lng: 113.966015 },
+  { id: 60, name_en: "Kin On", name_ch: "建安", lat: 22.396481, lng: 113.969512 },
+  { id: 70, name_en: "Ho Tin", name_ch: "河田", lat: 22.396481, lng: 113.972512 },
+  { id: 75, name_en: "Choy Yee Bridge", name_ch: "蔡意橋", lat: 22.398481, lng: 113.974512 },
+  { id: 80, name_en: "Affluence", name_ch: "澤豐", lat: 22.401481, lng: 113.974512 },
+  { id: 170, name_en: "Shek Pai", name_ch: "石排", lat: 22.402481, lng: 113.967512 },
+  { id: 180, name_en: "Shan King (North)", name_ch: "山景 (北)", lat: 22.400481, lng: 113.966512 },
+  { id: 190, name_en: "Shan King (South)", name_ch: "山景 (南)", lat: 22.397481, lng: 113.966512 },
+  { id: 200, name_en: "Ming Kum", name_ch: "鳴琴", lat: 22.399481, lng: 113.968512 },
+  { id: 212, name_en: "Tai Hing (North)", name_ch: "大興 (北)", lat: 22.403481, lng: 113.971512 },
+  { id: 220, name_en: "Tai Hing (South)", name_ch: "大興 (南)", lat: 22.401481, lng: 113.971512 },
+  { id: 230, name_en: "Ngan Wai", name_ch: "銀圍", lat: 22.403481, lng: 113.973512 },
+  { id: 270, name_en: "On Ting", name_ch: "安定", lat: 22.389481, lng: 113.975512 },
+  { id: 275, name_en: "Yau Oi", name_ch: "友愛", lat: 22.388481, lng: 113.973512 },
+  { id: 280, name_en: "Town Centre", name_ch: "市中心", lat: 22.392481, lng: 113.975512 },
+  { id: 295, name_en: "Tuen Mun", name_ch: "屯門", lat: 22.394481, lng: 113.974512 },
+  { id: 300, name_en: "Pui To", name_ch: "杯渡", lat: 22.395481, lng: 113.976512 },
+  { id: 320, name_en: "San Hui", name_ch: "新墟", lat: 22.399021, lng: 113.977015 },
+  { id: 310, name_en: "Ho Fuk Tong", name_ch: "何福堂", lat: 22.397021, lng: 113.978015 },
+  { id: 330, name_en: "Prime View", name_ch: "景峰", lat: 22.404021, lng: 113.981015 },
+
+  // Zone 3
+  { id: 340, name_en: "Fung Tei", name_ch: "鳳地", lat: 22.410021, lng: 113.982015 },
+  { id: 90, name_en: "Tuen Mun Hospital", name_ch: "屯門醫院", lat: 22.405481, lng: 113.975512 },
+  { id: 100, name_en: "Siu Hong", name_ch: "兆康", lat: 22.412481, lng: 113.979512 },
+  { id: 110, name_en: "Kei Lun", name_ch: "麒麟", lat: 22.410481, lng: 113.976512 },
+  { id: 120, name_en: "Ching Chung", name_ch: "青松", lat: 22.407481, lng: 113.975512 },
+  { id: 130, name_en: "Kin Sang", name_ch: "建生", lat: 22.408481, lng: 113.971512 },
+  { id: 140, name_en: "Tin King", name_ch: "田景", lat: 22.409481, lng: 113.967512 },
+  { id: 150, name_en: "Leung King", name_ch: "良景", lat: 22.407481, lng: 113.966512 },
+  { id: 160, name_en: "San Wai", name_ch: "新圍", lat: 22.405481, lng: 113.967512 },
+  { id: 350, name_en: "Lam Tei", name_ch: "藍地", lat: 22.418481, lng: 113.983512 },
+  { id: 360, name_en: "Nai Wai", name_ch: "泥圍", lat: 22.422481, lng: 113.987512 },
+  { id: 370, name_en: "Chung Uk Tsuen", name_ch: "鍾屋村", lat: 22.427481, lng: 113.992512 },
+
+  // Zone 4
+  { id: 380, name_en: "Hung Shui Kiu", name_ch: "洪水橋", lat: 22.435481, lng: 114.000512 },
+  { id: 390, name_en: "Tong Fong Tsuen", name_ch: "塘坊村", lat: 22.441481, lng: 114.008512 },
+  { id: 400, name_en: "Ping Shan", name_ch: "屏山", lat: 22.444481, lng: 114.014512 },
+  { id: 425, name_en: "Hang Mei Tsuen", name_ch: "坑尾村", lat: 22.443021, lng: 114.008015 },
+  { id: 430, name_en: "Tin Shui Wai", name_ch: "天水圍", lat: 22.444481, lng: 114.003512 },
+  { id: 435, name_en: "Tin Tsz", name_ch: "天慈", lat: 22.451481, lng: 114.005512 },
+  { id: 445, name_en: "Tin Yiu", name_ch: "天耀", lat: 22.448481, lng: 114.001512 },
+  { id: 448, name_en: "Locwood", name_ch: "樂湖", lat: 22.451481, lng: 113.998512 },
+  { id: 450, name_en: "Tin Wu", name_ch: "天湖", lat: 22.454481, lng: 114.003512 },
+  { id: 455, name_en: "Ginza", name_ch: "銀座", lat: 22.457481, lng: 114.004512 },
+  { id: 460, name_en: "Tin Shui", name_ch: "天瑞", lat: 22.456481, lng: 113.998512 },
+  { id: 490, name_en: "Chestwood", name_ch: "翠湖", lat: 22.459215, lng: 114.001234 },
+  { id: 500, name_en: "Tin Wing", name_ch: "天榮", lat: 22.461234, lng: 114.004456 },
+  
+  // Zone 5A
+  { id: 510, name_en: "Tin Yuet", name_ch: "天悅", lat: 22.464481, lng: 114.006512 },
+  { id: 520, name_en: "Tin Sau", name_ch: "天秀", lat: 22.468481, lng: 114.006512 },
+  { id: 530, name_en: "Wetland Park", name_ch: "濕地公園", lat: 22.470481, lng: 114.005512 },
+  { id: 540, name_en: "Tin Heng", name_ch: "天恆", lat: 22.470481, lng: 114.001512 },
+  { id: 550, name_en: "Tin Yat", name_ch: "天逸", lat: 22.468481, lng: 113.999512 },
+  { id: 468, name_en: "Chung Fu", name_ch: "頌富", lat: 22.461481, lng: 113.998512 },
+  { id: 480, name_en: "Tin Fu", name_ch: "天富", lat: 22.465481, lng: 113.998512 },
+
+  // Zone 5
+  { id: 560, name_en: "Shui Pin Wai", name_ch: "水邊圍", lat: 22.445481, lng: 114.020512 },
+  { id: 570, name_en: "Fung Nin Road", name_ch: "豐年路", lat: 22.444481, lng: 114.024512 },
+  { id: 580, name_en: "Hong Lok Road", name_ch: "康樂路", lat: 22.444481, lng: 114.028512 },
+  { id: 590, name_en: "Tai Tong Road", name_ch: "大棠路", lat: 22.444481, lng: 114.031512 },
+  { id: 600, name_en: "Yuen Long", name_ch: "元朗", lat: 22.445481, lng: 114.036512 },
+];

@@ -1,0 +1,52 @@
+{
+  "id": "com.lrt.eta.app.v1",
+  "name": "HK Light Rail ETA",
+  "short_name": "LRT ETA",
+  "description": "Real-time ETA for Hong Kong MTR Light Rail trains at a glance.",
+  "lang": "en-US",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "orientation": "portrait",
+  "categories": ["transportation", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/initials/png?seed=LRT&backgroundColor=f97316&size=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/initials/png?seed=LRT&backgroundColor=f97316&size=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/initials/png?seed=LRT&backgroundColor=f97316&radius=50&size=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://picsum.photos/seed/lrt1/320/640",
+      "sizes": "320x640",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "LRT Station Selection"
+    },
+    {
+      "src": "https://picsum.photos/seed/lrt2/1280/720",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "MTR ETA Dashboard"
+    }
+  ]
+}
