@@ -3,14 +3,80 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, RefreshCw, Train, Clock, MapPin, ChevronRight, Info, Star, Navigation, Download, LayoutGrid, Map as MapIcon, Share2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Search, RefreshCw, Train, Clock, MapPin, ChevronRight, Info, Star, Navigation, Download, LayoutGrid, Map as MapIcon, Share2, Languages, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LRT_STATIONS } from './constants';
 import { MTR_LINES } from './mtrConstants';
 import { LrtScheduleResponse, LrtStation, LrtPlatform, MtrLine, MtrStation, MtrScheduleResponse, MtrEta } from './types';
 
 type Tab = 'lrt' | 'mtr';
+type Language = 'zh' | 'en';
+
+const translations = {
+  zh: {
+    lrt_eta: "輕鐵預計到站",
+    mtr_eta: "港鐵預計到站",
+    current_station: "目前車站",
+    select_station: "選擇車站",
+    search_station: "搜尋車站...",
+    no_trains: "暫無預計到站班次",
+    service_ended: "今日服務可能已結束",
+    fetching: "正在獲取最新時間...",
+    updated: "更新於",
+    platform: "月台",
+    arriving: "即將抵達",
+    min: "分鐘",
+    double_car: "雙卡",
+    single_car: "單卡",
+    up_platform: "上行月台",
+    down_platform: "下行月台",
+    share: "分享",
+    language: "Language",
+    nearest: "最近車站",
+    refresh: "重新整理",
+    no_train_info: "暫無列車資訊",
+    last_train_left: "最後一班車可能已開出，或今日服務尚未開始。",
+    install_ios: "安裝於 iOS",
+    install_ios_desc: "點擊下方的分享按鈕，然後選擇「加入主畫面」。",
+    close: "關閉",
+    share_app: "分享應用",
+    scan_qr: "掃描二維碼以在手機上打開",
+    copy_link: "複製連結",
+    link_copied: "連結已複製！",
+  },
+  en: {
+    lrt_eta: "LRT ETA",
+    mtr_eta: "MTR ETA",
+    current_station: "Current Station",
+    select_station: "Select Station",
+    search_station: "Search station...",
+    no_trains: "No upcoming trains scheduled",
+    service_ended: "Service may have ended for today, or not yet started.",
+    fetching: "Fetching latest times...",
+    updated: "UPDATED",
+    platform: "Platform",
+    arriving: "Arriving",
+    min: "min",
+    double_car: "Double Car",
+    single_car: "Single Car",
+    up_platform: "Up Platform",
+    down_platform: "Down Platform",
+    share: "Share",
+    language: "語言",
+    nearest: "Nearest Station",
+    refresh: "Refresh",
+    no_train_info: "No train information available",
+    last_train_left: "The last train may have already left, or service has not yet started for today.",
+    install_ios: "Install on iOS",
+    install_ios_desc: "Tap the Share button below and select \"Add to Home Screen\".",
+    close: "Close",
+    share_app: "Share App",
+    scan_qr: "Scan this QR code to open on your phone",
+    copy_link: "Copy Link",
+    link_copied: "Link copied!",
+  }
+};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
@@ -20,10 +86,47 @@ export default function App() {
     }
     return 'lrt';
   });
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      const savedLang = localStorage.getItem('mtr_lrt_app_lang');
+      return (savedLang === 'zh' || savedLang === 'en') ? savedLang : 'zh';
+    }
+    return 'zh';
+  });
+  const [direction, setDirection] = useState(0);
+
+  const handleTabChange = (newTab: Tab) => {
+    if (newTab === activeTab) return;
+    setDirection(newTab === 'mtr' ? 1 : -1);
+    setActiveTab(newTab);
+  };
 
   useEffect(() => {
     localStorage.setItem('mtr_lrt_app_tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('mtr_lrt_app_lang', language);
+  }, [language]);
+
+  const t = translations[language];
+
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? '100%' : '-100%',
+      opacity: 0,
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? '100%' : '-100%',
+      opacity: 0,
+    }),
+  };
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
@@ -60,28 +163,61 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans pb-24 overflow-x-hidden">
-      <AnimatePresence mode="wait">
-        {activeTab === 'lrt' ? (
-          <LrtPage 
-            key="lrt" 
-            deferredPrompt={deferredPrompt} 
-            handleInstallClick={handleInstallClick}
-            showIOSInstructions={showIOSInstructions}
-            setShowIOSInstructions={setShowIOSInstructions}
-            setShowShareModal={setShowShareModal}
-          />
-        ) : (
-          <MtrPage 
-            key="mtr" 
-            deferredPrompt={deferredPrompt} 
-            handleInstallClick={handleInstallClick}
-            showIOSInstructions={showIOSInstructions}
-            setShowIOSInstructions={setShowIOSInstructions}
-            setShowShareModal={setShowShareModal}
-          />
-        )}
-      </AnimatePresence>
+    <div className="h-screen bg-neutral-50 text-neutral-900 font-sans overflow-hidden flex flex-col">
+      <div className="flex-1 relative overflow-hidden">
+        <AnimatePresence initial={false} custom={direction} mode="popLayout">
+          <motion.div
+            key={activeTab}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: "spring", stiffness: 300, damping: 32, mass: 0.5 },
+              opacity: { duration: 0.2 }
+            }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={1}
+            onDragEnd={(e, info) => {
+              const swipe = info.offset.x;
+              const velocity = info.velocity.x;
+              
+              if (swipe > 50 || velocity > 500) {
+                if (activeTab === 'mtr') handleTabChange('lrt');
+              } else if (swipe < -50 || velocity < -500) {
+                if (activeTab === 'lrt') handleTabChange('mtr');
+              }
+            }}
+            className="absolute inset-0"
+          >
+            {activeTab === 'lrt' ? (
+              <LrtPage 
+                deferredPrompt={deferredPrompt} 
+                handleInstallClick={handleInstallClick}
+                showIOSInstructions={showIOSInstructions}
+                setShowIOSInstructions={setShowIOSInstructions}
+                setShowShareModal={setShowShareModal}
+                language={language}
+                setLanguage={setLanguage}
+                t={t}
+              />
+            ) : (
+              <MtrPage 
+                deferredPrompt={deferredPrompt} 
+                handleInstallClick={handleInstallClick}
+                showIOSInstructions={showIOSInstructions}
+                setShowIOSInstructions={setShowIOSInstructions}
+                setShowShareModal={setShowShareModal}
+                language={language}
+                setLanguage={setLanguage}
+                t={t}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       {/* Share Modal */}
       <AnimatePresence>
@@ -101,8 +237,8 @@ export default function App() {
               onClick={e => e.stopPropagation()}
             >
               <div className="space-y-2">
-                <h3 className="text-2xl font-black tracking-tight">Share App</h3>
-                <p className="text-neutral-500 text-sm font-medium">Scan this QR code to open on your phone</p>
+                <h3 className="text-2xl font-black tracking-tight">{t.share_app}</h3>
+                <p className="text-neutral-500 text-sm font-medium">{t.scan_qr}</p>
               </div>
               
               <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-100">
@@ -118,17 +254,25 @@ export default function App() {
                 <button 
                   onClick={() => {
                     navigator.clipboard.writeText(shareUrl);
-                    alert("Link copied to clipboard!");
+                    const btn = document.getElementById('copy-btn');
+                    if (btn) {
+                      const originalText = btn.innerText;
+                      btn.innerText = t.link_copied;
+                      setTimeout(() => {
+                        btn.innerText = originalText;
+                      }, 2000);
+                    }
                   }}
+                  id="copy-btn"
                   className="w-full py-3 bg-neutral-900 text-white rounded-xl font-bold text-sm hover:bg-neutral-800 transition-colors"
                 >
-                  Copy Link
+                  {t.copy_link}
                 </button>
                 <button 
                   onClick={() => setShowShareModal(false)}
                   className="w-full py-3 bg-neutral-100 text-neutral-600 rounded-xl font-bold text-sm hover:bg-neutral-200 transition-colors"
                 >
-                  Close
+                  {t.close}
                 </button>
               </div>
             </motion.div>
@@ -137,31 +281,89 @@ export default function App() {
       </AnimatePresence>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-lg border-t border-neutral-200 px-6 py-3 pb-8 flex items-center justify-around shadow-[0_-4px_12px_rgba(0,0,0,0.05)] will-change-transform [transform:translateZ(0)] [backface-visibility:hidden]">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-lg border-t border-neutral-200 px-6 py-2 pb-5 flex items-center justify-around shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
         <button 
-          onClick={() => setActiveTab('lrt')}
-          className={`flex flex-col items-center gap-1 transition-all duration-200 ${activeTab === 'lrt' ? 'text-orange-500' : 'text-neutral-400 hover:text-neutral-600'}`}
+          onClick={() => handleTabChange('lrt')}
+          className={`flex flex-col items-center gap-0.5 transition-all duration-200 ${activeTab === 'lrt' ? 'text-orange-500' : 'text-neutral-400 hover:text-neutral-600'}`}
         >
-          <div className={`p-1.5 rounded-xl ${activeTab === 'lrt' ? 'bg-orange-100' : 'bg-transparent'}`}>
-            <Train className="w-6 h-6" />
+          <div className={`p-1 rounded-xl ${activeTab === 'lrt' ? 'bg-orange-100' : 'bg-transparent'}`}>
+            <Train className="w-5 h-5" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest">Light Rail</span>
+          <span className="text-[9px] font-black uppercase tracking-widest">Light Rail</span>
         </button>
         <button 
-          onClick={() => setActiveTab('mtr')}
-          className={`flex flex-col items-center gap-1 transition-all duration-200 ${activeTab === 'mtr' ? 'text-blue-600' : 'text-neutral-400 hover:text-neutral-600'}`}
+          onClick={() => handleTabChange('mtr')}
+          className={`flex flex-col items-center gap-0.5 transition-all duration-200 ${activeTab === 'mtr' ? 'text-blue-600' : 'text-neutral-400 hover:text-neutral-600'}`}
         >
-          <div className={`p-1.5 rounded-xl ${activeTab === 'mtr' ? 'bg-blue-50' : 'bg-transparent'}`}>
-            <LayoutGrid className="w-6 h-6" />
+          <div className={`p-1 rounded-xl ${activeTab === 'mtr' ? 'bg-blue-50' : 'bg-transparent'}`}>
+            <Train className="w-5 h-5" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest">MTR</span>
+          <span className="text-[9px] font-black uppercase tracking-widest">MTR</span>
         </button>
       </nav>
     </div>
   );
 }
 
-function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setShowIOSInstructions, setShowShareModal }: any) {
+function SecondaryMenu({ language, setLanguage, onShare, t }: { language: Language, setLanguage: (l: Language) => void, onShare: () => void, t: any }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+      >
+        <MoreVertical className="w-5 h-5 text-neutral-600" />
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            className="absolute left-0 mt-2 w-48 bg-white border border-neutral-200 rounded-2xl shadow-xl z-50 overflow-hidden"
+          >
+            <button 
+              onClick={() => {
+                setLanguage(language === 'zh' ? 'en' : 'zh');
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-50 transition-colors text-left"
+            >
+              <Languages className="w-4 h-4 text-neutral-500" />
+              <span className="text-sm font-medium">{t.language}</span>
+            </button>
+            <button 
+              onClick={() => {
+                onShare();
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-50 transition-colors text-left border-t border-neutral-100"
+            >
+              <Share2 className="w-4 h-4 text-neutral-500" />
+              <span className="text-sm font-medium">{t.share}</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setShowIOSInstructions, setShowShareModal, language, setLanguage, t }: any) {
   const [selectedStation, setSelectedStation] = useState<LrtStation>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('lrt_last_station');
@@ -183,6 +385,9 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
     return saved ? JSON.parse(saved) : [];
   });
   const [locating, setLocating] = useState(false);
+  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const findNearestStation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -191,30 +396,47 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
     }
 
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        let nearest = LRT_STATIONS[0];
-        let minDistance = Infinity;
+    const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+    
+    const success = (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      setCurrentCoords({ lat: latitude, lng: longitude });
+      let nearest = LRT_STATIONS[0];
+      let minDistance = Infinity;
 
-        LRT_STATIONS.forEach(station => {
-          const dist = Math.sqrt(Math.pow(station.lat - latitude, 2) + Math.pow(station.lng - longitude, 2));
-          if (dist < minDistance) {
-            minDistance = dist;
-            nearest = station;
-          }
-        });
+      LRT_STATIONS.forEach(station => {
+        const dist = Math.sqrt(Math.pow(station.lat - latitude, 2) + Math.pow(station.lng - longitude, 2));
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearest = station;
+        }
+      });
 
-        setSelectedStation(nearest);
-        setLocating(false);
-        setShowStationList(false);
-      },
-      () => {
-        setError('Unable to retrieve your location');
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
+      setSelectedStation(nearest);
+      setLocating(false);
+      setShowStationList(false);
+    };
+
+    const failure = (err: GeolocationPositionError) => {
+      if (options.enableHighAccuracy) {
+        // Try again with low accuracy
+        options.enableHighAccuracy = false;
+        navigator.geolocation.getCurrentPosition(success, finalFailure, options);
+      } else {
+        finalFailure(err);
+      }
+    };
+
+    const finalFailure = (err: GeolocationPositionError) => {
+      let msg = 'Unable to retrieve your location';
+      if (err.code === err.PERMISSION_DENIED) msg = 'Location access denied';
+      if (err.code === err.POSITION_UNAVAILABLE) msg = 'Geolocation information is not available';
+      if (err.code === err.TIMEOUT) msg = 'Location request timed out';
+      setError(msg);
+      setLocating(false);
+    };
+
+    navigator.geolocation.getCurrentPosition(success, failure, options);
   }, []);
 
   useEffect(() => {
@@ -274,22 +496,20 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
   }, [searchQuery, favorites]);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.2, ease: "easeInOut" }}
-      style={{ willChange: "transform, opacity" }}
-      className="flex flex-col"
-    >
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-neutral-200 px-4 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full overflow-hidden">
+      <header className="bg-white/90 backdrop-blur-md border-b border-neutral-200 px-4 py-3 flex items-center justify-between shadow-sm relative z-30 shrink-0">
+        <div className="flex-1 flex justify-start">
+          <SecondaryMenu language={language} setLanguage={setLanguage} onShare={() => setShowShareModal(true)} t={t} />
+        </div>
+
+        <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
           <div className="bg-orange-500 p-1.5 rounded-lg">
             <Train className="w-5 h-5 text-white" />
           </div>
-          <h1 className="font-bold text-lg tracking-tight">LRT ETA</h1>
+          <h1 className="font-bold text-lg tracking-tight">{t.lrt_eta}</h1>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex-1 flex justify-end gap-1">
           {deferredPrompt && (
             <button onClick={handleInstallClick} className="p-2 bg-orange-100 text-orange-600 rounded-full hover:bg-orange-200 transition-colors">
               <Download className="w-5 h-5" />
@@ -304,13 +524,11 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
           <button onClick={() => fetchSchedule(selectedStation.id)} disabled={loading} className="p-2 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-50">
             <RefreshCw className={`w-5 h-5 text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button onClick={() => setShowShareModal(true)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
-            <Share2 className="w-5 h-5 text-neutral-600" />
-          </button>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto p-4 space-y-6 w-full">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-24 touch-pan-y">
+        <main className="max-w-md mx-auto p-4 space-y-6 w-full">
         <AnimatePresence>
           {showIOSInstructions && (
             <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-blue-500 text-white p-4 rounded-2xl shadow-lg relative overflow-hidden">
@@ -320,21 +538,26 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
               <div className="flex items-start gap-3">
                 <div className="bg-white/20 p-2 rounded-xl shrink-0"><Info className="w-6 h-6" /></div>
                 <div className="space-y-1">
-                  <h3 className="font-bold">Install on iOS</h3>
-                  <p className="text-xs opacity-90 leading-relaxed">Tap the <span className="font-bold">Share</span> button below and select <span className="font-bold">"Add to Home Screen"</span>.</p>
+                  <h3 className="font-bold">{t.install_ios}</h3>
+                  <p className="text-xs opacity-90 leading-relaxed">{t.install_ios_desc}</p>
                 </div>
               </div>
             </motion.section>
           )}
         </AnimatePresence>
 
-        <section>
+        <section className="sticky top-0 z-20 bg-neutral-50/90 backdrop-blur-md -mx-4 px-4 -mt-4 pt-4 pb-2 mb-2 shadow-sm border-b border-neutral-200">
           <button onClick={() => setShowStationList(true)} className="w-full bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:border-orange-300 transition-all group">
             <div className="flex items-center gap-3">
               <div className="bg-orange-100 p-2 rounded-full group-hover:bg-orange-200 transition-colors"><MapPin className="w-5 h-5 text-orange-600" /></div>
               <div className="text-left">
-                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Current Station</p>
-                <h2 className="text-xl font-bold">{selectedStation.name_ch} <span className="text-neutral-400 font-medium text-base ml-1">{selectedStation.name_en}</span></h2>
+                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t.current_station}</p>
+                <h2 className="text-xl font-bold">
+                  {language === 'zh' ? selectedStation.name_ch : selectedStation.name_en} 
+                  <span className="text-neutral-400 font-medium text-base ml-1">
+                    {language === 'zh' ? selectedStation.name_en : selectedStation.name_ch}
+                  </span>
+                </h2>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-orange-500 transition-colors" />
@@ -343,31 +566,45 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
 
         <section className="space-y-4">
           {error && <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl flex items-start gap-3"><Info className="w-5 h-5 shrink-0 mt-0.5" /><p className="text-sm font-medium">{error}</p></div>}
-          {loading && !schedule && <div className="flex flex-col items-center justify-center py-12 space-y-4"><div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div><p className="text-neutral-500 font-medium animate-pulse">Fetching latest times...</p></div>}
+          {loading && !schedule && <div className="flex flex-col items-center justify-center py-12 space-y-4"><div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div><p className="text-neutral-500 font-medium animate-pulse">{t.fetching}</p></div>}
           {schedule && schedule.platform_list.map((platform) => (
             <div key={platform.platform_id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="bg-neutral-900 text-white px-4 py-2 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-widest">Platform {platform.platform_id}</span>
-                <div className="flex items-center gap-1 text-[10px] opacity-60"><Clock className="w-3 h-3" /><span>UPDATED {lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></div>
+                <span className="text-xs font-bold uppercase tracking-widest">{t.platform} {platform.platform_id}</span>
+                <div className="flex items-center gap-1 text-[10px] opacity-60"><Clock className="w-3 h-3" /><span>{t.updated} {lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></div>
               </div>
               <div className="divide-y divide-neutral-100">
-                {platform.route_list.length > 0 ? platform.route_list.map((route, idx) => (
+                {platform.route_list && platform.route_list.length > 0 ? platform.route_list.map((route, idx) => (
                   <motion.div key={`${route.route_no}-${idx}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-center justify-center bg-orange-500 text-white w-12 h-12 rounded-xl font-black text-lg shadow-sm">{route.route_no}</div>
-                      <div><h3 className="font-bold text-lg leading-tight">{route.dest_ch}</h3><p className="text-neutral-500 text-sm font-medium">{route.dest_en}</p></div>
+                      <div>
+                        <h3 className="font-bold text-lg leading-tight">{language === 'zh' ? route.dest_ch : route.dest_en}</h3>
+                        <p className="text-neutral-500 text-sm font-medium">{language === 'zh' ? route.dest_en : route.dest_ch}</p>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-black text-orange-600 tabular-nums">{route.time_en.includes('min') ? <>{route.time_en.split(' ')[0]}<span className="text-xs font-bold ml-1 uppercase">min</span></> : <span className="text-base">{route.time_ch}</span>}</div>
-                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{route.train_length === 2 ? 'Double Car' : 'Single Car'}</p>
+                      <div className="text-2xl font-black text-orange-600 tabular-nums">
+                        {route.time_en.includes('min') ? <>{route.time_en.split(' ')[0]}<span className="text-xs font-bold ml-1 uppercase">{t.min}</span></> : <span className="text-base">{language === 'zh' ? route.time_ch : route.time_en}</span>}
+                      </div>
+                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{route.train_length === 2 ? t.double_car : t.single_car}</p>
                     </div>
                   </motion.div>
-                )) : <div className="p-8 text-center text-neutral-400 italic">No upcoming trains scheduled</div>}
+                )) : (
+                  <div className="p-8 text-center space-y-2">
+                    <div className="bg-neutral-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <Clock className="w-6 h-6 text-neutral-400" />
+                    </div>
+                    <p className="text-neutral-500 font-medium">{t.no_trains}</p>
+                    <p className="text-neutral-400 text-xs">{t.service_ended}</p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </section>
       </main>
+    </div>
 
       <AnimatePresence>
         {showStationList && (
@@ -389,13 +626,20 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
               <div className="flex-1 overflow-y-auto p-2">
                 <div className="grid grid-cols-1 gap-1">
                   {sortedStations.map((station) => (
-                    <button key={station.id} onClick={() => { setSelectedStation(station); setShowStationList(false); setSearchQuery(''); }} className={`flex items-center justify-between p-4 rounded-xl transition-all text-left ${selectedStation.id === station.id ? 'bg-orange-50 text-orange-700 font-bold' : 'hover:bg-neutral-50 text-neutral-700'}`}>
+                    <div 
+                      key={station.id} 
+                      onClick={() => { setSelectedStation(station); setShowStationList(false); setSearchQuery(''); }} 
+                      className={`flex items-center justify-between p-4 rounded-xl transition-all text-left cursor-pointer ${selectedStation.id === station.id ? 'bg-orange-50 text-orange-700 font-bold' : 'hover:bg-neutral-50 text-neutral-700'}`}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedStation(station); setShowStationList(false); setSearchQuery(''); } }}
+                    >
                       <div className="flex items-center gap-3">
                         <button onClick={(e) => toggleFavorite(e, station.id)} className="p-2 hover:bg-neutral-200 rounded-full transition-colors"><Star className={`w-4 h-4 ${favorites.includes(station.id) ? 'text-orange-500 fill-orange-500' : 'text-neutral-300'}`} /></button>
                         <div><span className="text-lg">{station.name_ch}</span><span className="ml-2 text-sm opacity-60 font-medium">{station.name_en}</span></div>
                       </div>
                       {selectedStation.id === station.id && <div className="w-2 h-2 bg-orange-500 rounded-full" />}
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -403,11 +647,11 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
-function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setShowIOSInstructions, setShowShareModal }: any) {
+function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setShowIOSInstructions, setShowShareModal, language, setLanguage, t }: any) {
   const allStations = useMemo(() => {
     const stationsMap: Record<string, MtrStation & { lines: MtrLine[] }> = {};
     MTR_LINES.forEach(line => {
@@ -453,6 +697,9 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
     return saved ? JSON.parse(saved) : [];
   });
   const [locating, setLocating] = useState(false);
+  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const findNearestStation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -461,33 +708,50 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
     }
 
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        let nearestStation = allStations[0];
-        let minDistance = Infinity;
+    const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
 
-        allStations.forEach(station => {
-          if (station.lat && station.lng) {
-            const dist = Math.sqrt(Math.pow(station.lat - latitude, 2) + Math.pow(station.lng - longitude, 2));
-            if (dist < minDistance) {
-              minDistance = dist;
-              nearestStation = station;
-            }
+    const success = (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      setCurrentCoords({ lat: latitude, lng: longitude });
+      let nearestStation = allStations[0];
+      let minDistance = Infinity;
+
+      allStations.forEach(station => {
+        if (station.lat && station.lng) {
+          const dist = Math.sqrt(Math.pow(station.lat - latitude, 2) + Math.pow(station.lng - longitude, 2));
+          if (dist < minDistance) {
+            minDistance = dist;
+            nearestStation = station;
           }
-        });
+        }
+      });
 
-        setSelectedStation(nearestStation);
-        setSelectedLine(nearestStation.lines[0]);
-        setLocating(false);
-        setShowStationList(false);
-      },
-      () => {
-        setError('Unable to retrieve your location');
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
+      setSelectedStation(nearestStation);
+      setSelectedLine(nearestStation.lines[0]);
+      setLocating(false);
+      setShowStationList(false);
+    };
+
+    const failure = (err: GeolocationPositionError) => {
+      if (options.enableHighAccuracy) {
+        // Try again with low accuracy
+        options.enableHighAccuracy = false;
+        navigator.geolocation.getCurrentPosition(success, finalFailure, options);
+      } else {
+        finalFailure(err);
+      }
+    };
+
+    const finalFailure = (err: GeolocationPositionError) => {
+      let msg = 'Unable to retrieve your location';
+      if (err.code === err.PERMISSION_DENIED) msg = 'Location access denied';
+      if (err.code === err.POSITION_UNAVAILABLE) msg = 'Geolocation information is not available';
+      if (err.code === err.TIMEOUT) msg = 'Location request timed out';
+      setError(msg);
+      setLocating(false);
+    };
+
+    navigator.geolocation.getCurrentPosition(success, failure, options);
   }, [allStations]);
 
   useEffect(() => {
@@ -556,6 +820,13 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
     return schedule.data[key];
   }, [schedule, selectedLine, selectedStation]);
 
+  const hasTrains = useMemo(() => {
+    if (!mtrData) return false;
+    const up = (mtrData as any).UP as MtrEta[] | undefined;
+    const down = (mtrData as any).DOWN as MtrEta[] | undefined;
+    return (up && up.length > 0) || (down && down.length > 0);
+  }, [mtrData]);
+
   const filteredStations = useMemo(() => {
     const filtered = allStations.filter(s => 
       s.name_en.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -571,106 +842,114 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
   }, [allStations, searchQuery, favorites]);
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.2, ease: "easeInOut" }}
-      style={{ willChange: "transform, opacity" }}
-      className="flex flex-col"
-    >
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-neutral-200 px-4 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-1.5 rounded-lg">
-            <LayoutGrid className="w-5 h-5 text-white" />
-          </div>
-          <h1 className="font-bold text-lg tracking-tight">MTR ETA</h1>
+    <div className="flex flex-col h-full overflow-hidden">
+      <header className="bg-white/90 backdrop-blur-md border-b border-neutral-200 px-4 py-3 flex items-center justify-between shadow-sm relative z-30 shrink-0">
+        <div className="flex-1 flex justify-start">
+          <SecondaryMenu language={language} setLanguage={setLanguage} onShare={() => setShowShareModal(true)} t={t} />
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
+          <div className="p-1.5 rounded-lg" style={{ backgroundColor: selectedLine.color }}>
+            <Train className="w-5 h-5 text-white" />
+          </div>
+          <h1 className="font-bold text-lg tracking-tight">{t.mtr_eta}</h1>
+        </div>
+
+        <div className="flex-1 flex justify-end gap-1">
           {deferredPrompt && (
-            <button onClick={handleInstallClick} className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors">
+            <button onClick={handleInstallClick} className="p-2 bg-neutral-100 rounded-full transition-colors" style={{ color: selectedLine.color }}>
               <Download className="w-5 h-5" />
             </button>
           )}
           <button onClick={findNearestStation} disabled={locating} className="p-2 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-50">
-            <Navigation className={`w-5 h-5 text-neutral-600 ${locating ? 'animate-pulse text-blue-600' : ''}`} />
+            <Navigation className={`w-5 h-5 text-neutral-600 ${locating ? 'animate-pulse' : ''}`} style={locating ? { color: selectedLine.color } : {}} />
           </button>
           <button onClick={(e) => toggleFavorite(e, selectedLine.code, selectedStation.code)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
-            <Star className={`w-5 h-5 ${favorites.includes(`${selectedLine.code}-${selectedStation.code}`) ? 'text-blue-600 fill-blue-600' : 'text-neutral-400'}`} />
+            <Star className={`w-5 h-5 ${favorites.includes(`${selectedLine.code}-${selectedStation.code}`) ? 'fill-current' : 'text-neutral-400'}`} style={favorites.includes(`${selectedLine.code}-${selectedStation.code}`) ? { color: selectedLine.color } : {}} />
           </button>
           <button onClick={() => fetchSchedule(selectedLine.code, selectedStation.code)} disabled={loading} className="p-2 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-50">
             <RefreshCw className={`w-5 h-5 text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button onClick={() => setShowShareModal(true)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
-            <Share2 className="w-5 h-5 text-neutral-600" />
-          </button>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto p-4 space-y-4 w-full">
-        <section className="space-y-3">
-          <button onClick={() => setShowStationList(true)} className="w-full bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:border-blue-300 transition-all group">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-24 touch-pan-y">
+        <main className="max-w-md mx-auto p-4 space-y-4 w-full">
+        <section className="sticky top-0 z-20 bg-neutral-50/90 backdrop-blur-md -mx-4 px-4 -mt-4 pt-4 pb-2 mb-2 shadow-sm border-b border-neutral-200 space-y-2 touch-pan-y">
+          <button onClick={() => setShowStationList(true)} className="w-full bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between shadow-sm transition-all group" style={{ borderColor: 'transparent' }}>
             <div className="flex items-center gap-3">
-              <div className="bg-blue-50 p-2 rounded-full group-hover:bg-blue-100 transition-colors">
-                <MapPin className="w-5 h-5 text-blue-600" />
+              <div className="p-2 rounded-full transition-colors" style={{ backgroundColor: `${selectedLine.color}15` }}>
+                <MapPin className="w-5 h-5" style={{ color: selectedLine.color }} />
               </div>
               <div className="text-left">
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Station</p>
-                <h2 className="font-bold text-lg">{selectedStation.name_ch} <span className="text-neutral-400 font-medium text-sm ml-1">{selectedStation.name_en}</span></h2>
+                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">{t.current_station}</p>
+                <h2 className="text-xl font-bold">
+                  {language === 'zh' ? selectedStation.name_ch : selectedStation.name_en} 
+                  <span className="text-neutral-400 font-medium text-base ml-1">
+                    {language === 'zh' ? selectedStation.name_en : selectedStation.name_ch}
+                  </span>
+                </h2>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-blue-500 transition-colors" />
+            <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-neutral-500 transition-colors" style={{ color: selectedLine.color }} />
           </button>
-
+          
           {selectedStation.lines.length > 1 ? (
-            <div className="bg-white border border-neutral-200 rounded-2xl p-1 flex gap-1 shadow-sm overflow-x-auto no-scrollbar">
+            <div className="bg-white border border-neutral-200 rounded-2xl p-1.5 flex gap-2 shadow-sm overflow-x-auto no-scrollbar">
               {selectedStation.lines.map(line => (
                 <button
                   key={line.code}
                   onClick={() => setSelectedLine(line)}
-                  className={`flex-1 min-w-[100px] px-3 py-2 rounded-xl flex items-center gap-2 transition-all ${selectedLine.code === line.code ? 'bg-neutral-900 text-white shadow-md' : 'hover:bg-neutral-50 text-neutral-600'}`}
+                  className={`flex-1 min-w-[120px] px-3 py-2 rounded-xl flex items-center gap-2 transition-all ${selectedLine.code === line.code ? 'text-white shadow-md' : 'hover:bg-neutral-50 text-neutral-600'}`}
+                  style={selectedLine.code === line.code ? { backgroundColor: line.color } : {}}
                 >
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: line.color }}></div>
-                  <span className="text-xs font-bold whitespace-nowrap">{line.name_ch}</span>
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/20" style={{ backgroundColor: selectedLine.code === line.code ? 'white' : line.color }}></div>
+                  <span className="text-xs font-bold whitespace-nowrap">{language === 'zh' ? line.name_ch : line.name_en}</span>
                 </button>
               ))}
             </div>
           ) : (
             <div className="bg-white border border-neutral-200 rounded-2xl px-4 py-2 flex items-center gap-2 shadow-sm">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedLine.color }}></div>
-              <span className="text-xs font-bold text-neutral-500">{selectedLine.name_ch} {selectedLine.name_en}</span>
+              <span className="text-xs font-bold text-neutral-500">
+                {language === 'zh' ? selectedLine.name_ch : selectedLine.name_en} 
+                {' '}
+                {language === 'zh' ? selectedLine.name_en : selectedLine.name_ch}
+              </span>
             </div>
           )}
         </section>
 
         <section className="space-y-4">
           {error && <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl flex items-start gap-3"><Info className="w-5 h-5 shrink-0 mt-0.5" /><p className="text-sm font-medium">{error}</p></div>}
-          {loading && !schedule && <div className="flex flex-col items-center justify-center py-12 space-y-4"><div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div><p className="text-neutral-500 font-medium animate-pulse">Fetching latest times...</p></div>}
+          {loading && !schedule && <div className="flex flex-col items-center justify-center py-12 space-y-4"><div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div><p className="text-neutral-500 font-medium animate-pulse">{t.fetching}</p></div>}
           
-          {mtrData && (
+          {mtrData && hasTrains ? (
             <>
               {['UP', 'DOWN'].map((dir) => {
                 const trains = (mtrData as any)[dir] as MtrEta[];
                 if (!trains || trains.length === 0) return null;
                 return (
                   <div key={dir} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-                    <div className="bg-neutral-900 text-white px-4 py-2 flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-widest">{dir === 'UP' ? 'Up' : 'Down'} Platform</span>
-                      <div className="flex items-center gap-1 text-[10px] opacity-60"><Clock className="w-3 h-3" /><span>UPDATED {lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></div>
+                    <div className="text-white px-4 py-2 flex items-center justify-between" style={{ backgroundColor: selectedLine.color }}>
+                      <span className="text-xs font-bold uppercase tracking-widest">{dir === 'UP' ? t.up_platform : t.down_platform}</span>
+                      <div className="flex items-center gap-1 text-[10px] opacity-80"><Clock className="w-3 h-3" /><span>{t.updated} {lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></div>
                     </div>
                     <div className="divide-y divide-neutral-100">
                       {trains.map((train, idx) => (
                         <motion.div key={`${train.time}-${idx}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors">
                           <div className="flex items-center gap-4">
-                            <div className="flex flex-col items-center justify-center bg-blue-600 text-white w-10 h-10 rounded-xl font-black text-sm shadow-sm">P{train.plat}</div>
+                            <div className="flex flex-col items-center justify-center text-white w-10 h-10 rounded-xl font-black text-sm shadow-sm" style={{ backgroundColor: selectedLine.color }}>P{train.plat}</div>
                             <div>
-                              <h3 className="font-bold text-lg leading-tight">{getDestName(train.dest)}</h3>
+                              <h3 className="font-bold text-lg leading-tight">
+                                {language === 'zh' ? stationNameMap[train.dest]?.ch : stationNameMap[train.dest]?.en || train.dest}
+                              </h3>
                               <p className="text-neutral-400 text-[10px] font-bold uppercase">{new Date(train.time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-black text-blue-600 tabular-nums">
-                              {train.ttnt === '0' ? <span className="text-base">Arriving</span> : <>{train.ttnt}<span className="text-xs font-bold ml-1 uppercase">min</span></>}
+                            <div className="text-2xl font-black tabular-nums" style={{ color: selectedLine.color }}>
+                              {train.ttnt === '0' ? <span className="text-base">{t.arriving}</span> : <>{train.ttnt}<span className="text-xs font-bold ml-1 uppercase">{t.min}</span></>}
                             </div>
                           </div>
                         </motion.div>
@@ -680,10 +959,27 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
                 );
               })}
             </>
+          ) : !loading && !error && (
+            <div className="p-12 text-center space-y-4">
+              <div className="bg-neutral-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Clock className="w-8 h-8 text-neutral-400" />
+              </div>
+              <div>
+                <p className="text-neutral-500 font-bold text-lg">{t.no_trains}</p>
+                <p className="text-neutral-400 text-sm">{t.service_ended}</p>
+              </div>
+              <button 
+                onClick={() => fetchSchedule(selectedLine.code, selectedStation.code)}
+                className="px-6 py-2 text-white rounded-xl font-bold transition-colors shadow-md"
+                style={{ backgroundColor: selectedLine.color }}
+              >
+                {t.refresh}
+              </button>
+            </div>
           )}
-          {!loading && !mtrData && !error && <div className="p-12 text-center text-neutral-400 italic">No train information available for this station</div>}
         </section>
       </main>
+    </div>
 
       {/* Station Selection Modal */}
       <AnimatePresence>
@@ -693,7 +989,7 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
               <div className="p-4 border-b border-neutral-100 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-xl">Select Station</h3>
-                  <button onClick={findNearestStation} disabled={locating} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50">
+                  <button onClick={findNearestStation} disabled={locating} className="p-1.5 rounded-lg transition-colors disabled:opacity-50" style={{ backgroundColor: `${selectedLine.color}15`, color: selectedLine.color }}>
                     <Navigation className={`w-4 h-4 ${locating ? 'animate-pulse' : ''}`} />
                   </button>
                 </div>
@@ -707,7 +1003,8 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
                     placeholder="Search station..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-neutral-100 border-none rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-blue-500 transition-all outline-none font-medium"
+                    className="w-full bg-neutral-100 border-none rounded-xl py-3 pl-10 pr-4 transition-all outline-none font-medium focus:ring-2"
+                    style={{ '--tw-ring-color': selectedLine.color } as any}
                     autoFocus
                   />
                 </div>
@@ -723,7 +1020,8 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
                         setShowStationList(false); 
                         setSearchQuery('');
                       }} 
-                      className={`flex items-center justify-between p-4 rounded-xl transition-all text-left ${selectedStation.code === station.code ? 'bg-blue-50 text-blue-700 font-bold' : 'hover:bg-neutral-50 text-neutral-700'}`}
+                      className={`flex items-center justify-between p-4 rounded-xl transition-all text-left ${selectedStation.code === station.code ? 'font-bold' : 'hover:bg-neutral-50 text-neutral-700'}`}
+                      style={selectedStation.code === station.code ? { backgroundColor: `${selectedLine.color}15`, color: selectedLine.color } : {}}
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex -space-x-1">
@@ -736,7 +1034,7 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
                           <span className="ml-2 text-sm opacity-60 font-medium">{station.name_en}</span>
                         </div>
                       </div>
-                      {selectedStation.code === station.code && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+                      {selectedStation.code === station.code && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedLine.color }} />}
                     </button>
                   ))}
                 </div>
@@ -745,6 +1043,6 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }

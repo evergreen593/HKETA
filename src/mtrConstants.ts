@@ -152,7 +152,7 @@ export const MTR_LINES: MtrLine[] = [
       { code: 'SUW', name_en: 'Sung Wong Toi', name_ch: '宋皇臺', lat: 22.328512, lng: 114.191512 },
       { code: 'TKW', name_en: 'To Kwa Wan', name_ch: '土瓜灣', lat: 22.320512, lng: 114.188512 },
       { code: 'HOM', name_en: 'Ho Man Tin', name_ch: '何文田', lat: 22.309452, lng: 114.181923 },
-      { code: 'HMT', name_en: 'Hung Hom', name_ch: '紅磡', lat: 22.302912, lng: 114.181412 },
+      { code: 'HUH', name_en: 'Hung Hom', name_ch: '紅磡', lat: 22.302912, lng: 114.181412 },
       { code: 'ETS', name_en: 'East Tsim Sha Tsui', name_ch: '尖東', lat: 22.295112, lng: 114.174812 },
       { code: 'AUS', name_en: 'Austin', name_ch: '柯士甸', lat: 22.304712, lng: 114.165112 },
       { code: 'NAC', name_en: 'Nam Cheong', name_ch: '南昌', lat: 22.327512, lng: 114.153412 },
@@ -174,7 +174,7 @@ export const MTR_LINES: MtrLine[] = [
     stations: [
       { code: 'ADM', name_en: 'Admiralty', name_ch: '金鐘', lat: 22.279512, lng: 114.164512 },
       { code: 'EXC', name_en: 'Exhibition Centre', name_ch: '會展', lat: 22.282512, lng: 114.174512 },
-      { code: 'HMT', name_en: 'Hung Hom', name_ch: '紅磡', lat: 22.302912, lng: 114.181412 },
+      { code: 'HUH', name_en: 'Hung Hom', name_ch: '紅磡', lat: 22.302912, lng: 114.181412 },
       { code: 'MKK', name_en: 'Mong Kok East', name_ch: '旺角東', lat: 22.322112, lng: 114.171712 },
       { code: 'KOT', name_en: 'Kowloon Tong', name_ch: '九龍塘', lat: 22.337114, lng: 114.176145 },
       { code: 'TAW', name_en: 'Tai Wai', name_ch: '大圍', lat: 22.372512, lng: 114.178512 },
