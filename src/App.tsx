@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Search, RefreshCw, Train, Clock, MapPin, ChevronRight, Info, Star, Navigation, Download, LayoutGrid, Map as MapIcon, Share2, Languages, MoreVertical } from 'lucide-react';
+import { Search, Train, Clock, MapPin, ChevronRight, Info, Star, Navigation, Download, Share2, Languages, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LRT_STATIONS } from './constants';
 import { MTR_LINES } from './mtrConstants';
@@ -44,6 +44,7 @@ const translations = {
     scan_qr: "掃描二維碼以在手機上打開",
     copy_link: "複製連結",
     link_copied: "連結已複製！",
+    all: "全部",
   },
   en: {
     lrt_eta: "LRT ETA",
@@ -75,6 +76,7 @@ const translations = {
     scan_qr: "Scan this QR code to open on your phone",
     copy_link: "Copy Link",
     link_copied: "Link copied!",
+    all: "All",
   }
 };
 
@@ -176,19 +178,6 @@ export default function App() {
             transition={{
               x: { type: "spring", stiffness: 300, damping: 32, mass: 0.5 },
               opacity: { duration: 0.2 }
-            }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={1}
-            onDragEnd={(e, info) => {
-              const swipe = info.offset.x;
-              const velocity = info.velocity.x;
-              
-              if (swipe > 50 || velocity > 500) {
-                if (activeTab === 'mtr') handleTabChange('lrt');
-              } else if (swipe < -50 || velocity < -500) {
-                if (activeTab === 'lrt') handleTabChange('mtr');
-              }
             }}
             className="absolute inset-0"
           >
@@ -386,6 +375,18 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
   });
   const [locating, setLocating] = useState(false);
   const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
+
+  const availableRoutes = useMemo(() => {
+    if (!schedule) return [];
+    const routes = new Set<string>();
+    schedule.platform_list.forEach(platform => {
+      platform.route_list?.forEach(route => {
+        routes.add(route.route_no);
+      });
+    });
+    return Array.from(routes).sort();
+  }, [schedule]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -445,6 +446,7 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
 
   useEffect(() => {
     localStorage.setItem('lrt_last_station', selectedStation.id.toString());
+    setSelectedRoute(null);
   }, [selectedStation]);
 
   const fetchSchedule = useCallback(async (stationId: number) => {
@@ -521,9 +523,6 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
           <button onClick={(e) => toggleFavorite(e, selectedStation.id)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
             <Star className={`w-5 h-5 ${favorites.includes(selectedStation.id) ? 'text-orange-500 fill-orange-500' : 'text-neutral-400'}`} />
           </button>
-          <button onClick={() => fetchSchedule(selectedStation.id)} disabled={loading} className="p-2 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-5 h-5 text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
-          </button>
         </div>
       </header>
 
@@ -546,7 +545,7 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
           )}
         </AnimatePresence>
 
-        <section className="sticky top-0 z-20 bg-neutral-50/90 backdrop-blur-md -mx-4 px-4 -mt-4 pt-4 pb-2 mb-2 shadow-sm border-b border-neutral-200">
+        <section className="sticky top-0 z-20 bg-neutral-50/90 backdrop-blur-md -mx-4 px-4 -mt-4 pt-4 pb-2 mb-2 shadow-sm border-b border-neutral-200 space-y-2">
           <button onClick={() => setShowStationList(true)} className="w-full bg-white border border-neutral-200 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:border-orange-300 transition-all group">
             <div className="flex items-center gap-3">
               <div className="bg-orange-100 p-2 rounded-full group-hover:bg-orange-200 transition-colors"><MapPin className="w-5 h-5 text-orange-600" /></div>
@@ -562,46 +561,92 @@ function LrtPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
             </div>
             <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-orange-500 transition-colors" />
           </button>
+
+          {availableRoutes.length > 0 && (
+            <div className="bg-white border border-neutral-200 rounded-2xl p-1.5 flex gap-2 shadow-sm overflow-x-auto no-scrollbar">
+              <button
+                onClick={() => setSelectedRoute(null)}
+                className={`flex-1 min-w-[80px] px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all ${selectedRoute === null ? 'bg-orange-500 text-white shadow-md' : 'hover:bg-neutral-50 text-neutral-600'}`}
+              >
+                <span className="text-xs font-bold whitespace-nowrap">{t.all}</span>
+              </button>
+              {availableRoutes.map(routeNo => (
+                <button
+                  key={routeNo}
+                  onClick={() => setSelectedRoute(routeNo)}
+                  className={`flex-1 min-w-[80px] px-3 py-2 rounded-xl flex items-center justify-center gap-2 transition-all ${selectedRoute === routeNo ? 'bg-orange-500 text-white shadow-md' : 'hover:bg-neutral-50 text-neutral-600'}`}
+                >
+                  <span className="text-xs font-bold whitespace-nowrap">{routeNo}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="space-y-4">
           {error && <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl flex items-start gap-3"><Info className="w-5 h-5 shrink-0 mt-0.5" /><p className="text-sm font-medium">{error}</p></div>}
           {loading && !schedule && <div className="flex flex-col items-center justify-center py-12 space-y-4"><div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div><p className="text-neutral-500 font-medium animate-pulse">{t.fetching}</p></div>}
-          {schedule && schedule.platform_list.map((platform) => (
-            <div key={platform.platform_id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
-              <div className="bg-neutral-900 text-white px-4 py-2 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-widest">{t.platform} {platform.platform_id}</span>
-                <div className="flex items-center gap-1 text-[10px] opacity-60"><Clock className="w-3 h-3" /><span>{t.updated} {lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></div>
-              </div>
-              <div className="divide-y divide-neutral-100">
-                {platform.route_list && platform.route_list.length > 0 ? platform.route_list.map((route, idx) => (
-                  <motion.div key={`${route.route_no}-${idx}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col items-center justify-center bg-orange-500 text-white w-12 h-12 rounded-xl font-black text-lg shadow-sm">{route.route_no}</div>
-                      <div>
-                        <h3 className="font-bold text-lg leading-tight">{language === 'zh' ? route.dest_ch : route.dest_en}</h3>
-                        <p className="text-neutral-500 text-sm font-medium">{language === 'zh' ? route.dest_en : route.dest_ch}</p>
+          {schedule && schedule.platform_list.map((platform) => {
+            const filteredRoutes = selectedRoute 
+              ? (platform.route_list || []).filter(r => r.route_no === selectedRoute)
+              : (platform.route_list || []);
+            
+            if (selectedRoute && filteredRoutes.length === 0) return null;
+
+            return (
+              <div key={platform.platform_id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-neutral-900 text-white px-4 py-2 flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-widest">{t.platform} {platform.platform_id}</span>
+                  <div className="flex items-center gap-1 text-[10px] opacity-60"><Clock className="w-3 h-3" /><span>{t.updated} {lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span></div>
+                </div>
+                <div className="divide-y divide-neutral-100">
+                  {filteredRoutes.length > 0 ? filteredRoutes.map((route, idx) => (
+                    <motion.div key={`${route.route_no}-${idx}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="p-4 flex items-center justify-between hover:bg-neutral-50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="flex flex-col items-center justify-center bg-orange-500 text-white w-12 h-12 rounded-xl font-black text-lg shadow-sm">{route.route_no}</div>
+                        <div>
+                          <h3 className="font-bold text-lg leading-tight">{language === 'zh' ? route.dest_ch : route.dest_en}</h3>
+                          <p className="text-neutral-500 text-sm font-medium">{language === 'zh' ? route.dest_en : route.dest_ch}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-black text-orange-600 tabular-nums">
-                        {route.time_en.includes('min') ? <>{route.time_en.split(' ')[0]}<span className="text-xs font-bold ml-1 uppercase">{t.min}</span></> : <span className="text-base">{language === 'zh' ? route.time_ch : route.time_en}</span>}
+                      <div className="text-right">
+                        <div className="text-2xl font-black text-orange-600 tabular-nums">
+                          {route.time_en && route.time_en.includes('min') ? (
+                            <>
+                              {route.time_en.split(' ')[0]}
+                              <span className="text-xs font-bold ml-1 uppercase">{t.min}</span>
+                            </>
+                          ) : (
+                            <span className="text-base">
+                              {language === 'zh' ? (route.time_ch || '-') : (route.time_en || '-')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-end gap-0.5 mt-0.5">
+                          {route.train_length === 2 ? (
+                            <>
+                              <Train className="w-3 h-3 text-neutral-400" />
+                              <Train className="w-3 h-3 text-neutral-400" />
+                            </>
+                          ) : (
+                            <Train className="w-3 h-3 text-neutral-400" />
+                          )}
+                        </div>
                       </div>
-                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-tighter">{route.train_length === 2 ? t.double_car : t.single_car}</p>
+                    </motion.div>
+                  )) : (
+                    <div className="p-8 text-center space-y-2">
+                      <div className="bg-neutral-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Clock className="w-6 h-6 text-neutral-400" />
+                      </div>
+                      <p className="text-neutral-500 font-medium">{t.no_trains}</p>
+                      <p className="text-neutral-400 text-xs">{t.service_ended}</p>
                     </div>
-                  </motion.div>
-                )) : (
-                  <div className="p-8 text-center space-y-2">
-                    <div className="bg-neutral-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <Clock className="w-6 h-6 text-neutral-400" />
-                    </div>
-                    <p className="text-neutral-500 font-medium">{t.no_trains}</p>
-                    <p className="text-neutral-400 text-xs">{t.service_ended}</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </section>
       </main>
     </div>
@@ -866,9 +911,6 @@ function MtrPage({ deferredPrompt, handleInstallClick, showIOSInstructions, setS
           </button>
           <button onClick={(e) => toggleFavorite(e, selectedLine.code, selectedStation.code)} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
             <Star className={`w-5 h-5 ${favorites.includes(`${selectedLine.code}-${selectedStation.code}`) ? 'fill-current' : 'text-neutral-400'}`} style={favorites.includes(`${selectedLine.code}-${selectedStation.code}`) ? { color: selectedLine.color } : {}} />
-          </button>
-          <button onClick={() => fetchSchedule(selectedLine.code, selectedStation.code)} disabled={loading} className="p-2 hover:bg-neutral-100 rounded-full transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-5 h-5 text-neutral-600 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </header>
