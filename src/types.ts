@@ -1,3 +1,6 @@
+export type Tab = 'lrt' | 'mtr' | 'bus';
+export type Language = 'zh' | 'en';
+
 export interface LrtRoute {
   train_length: number;
   arrival_departure: string;
@@ -65,4 +68,30 @@ export interface MtrScheduleResponse {
       DOWN?: MtrEta[];
     };
   };
+}
+
+export type BusCompany = 'KMB' | 'LWB' | 'CTB' | 'NLB' | 'MTR';
+
+export interface UnifiedBusRoute {
+  id: string;
+  routeNo: string;
+  orig: { en: string; zh: string };
+  dest: { en: string; zh: string };
+  company: BusCompany;
+  bound?: string;
+  serviceType?: string;
+}
+
+export interface UnifiedBusStop {
+  id: string;
+  name: { en: string; zh: string };
+  lat: number;
+  lng: number;
+  seq: number;
+}
+
+export interface UnifiedBusEta {
+  time: string;
+  dest: { en: string; zh: string };
+  remark: { en: string; zh: string };
 }
