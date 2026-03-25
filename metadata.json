@@ -1,5 +1,5 @@
 {
-  "name": "HK Light Rail ETA",
-  "description": "Real-time ETA for Hong Kong MTR Light Rail trains at a glance.",
+  "name": "HKETA",
+  "description": "Real-time ETA for Hong Kong MTR/Light Rail trains at a glance.",
   "requestFramePermissions": ["geolocation"]
 }
